@@ -4,30 +4,16 @@ import { AdrWizard } from './components/AdrWizard';
 import { Adr } from './types';
 import { fetchAdrs, getGitLabAuthUrl, exchangeCodeForToken } from './lib/gitlab';
 import { generateCodeVerifier, generateCodeChallenge } from './lib/pkce';
-
-const getStoredToken = () => {
-  try {
-    return localStorage.getItem('gitlab_token');
-  } catch (e) {
-    return null;
-  }
-};
-
-const setStoredToken = (token: string) => {
-  try {
-    localStorage.setItem('gitlab_token', token);
-  } catch (e) {
-    console.warn('Failed to save token to localStorage');
-  }
-};
-
-const removeStoredToken = () => {
-  try {
-    localStorage.removeItem('gitlab_token');
-  } catch (e) {
-    console.warn('Failed to remove token from localStorage');
-  }
-};
+import { getRedirectUri, isAllowedMessageOrigin } from './lib/auth';
+import { adrDir, gitlabClientId, repoBranch, repoName } from './lib/config';
+import {
+  getStoredCodeVerifier,
+  getStoredToken,
+  removeStoredCodeVerifier,
+  removeStoredToken,
+  setStoredCodeVerifier,
+  setStoredToken,
+} from './lib/tokenStorage';
 
 function App() {
   const [token, setToken] = useState<string | null>(getStoredToken());
@@ -35,11 +21,6 @@ function App() {
   const [isCreating, setIsCreating] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  const clientId = import.meta.env.VITE_GITLAB_CLIENT_ID;
-  const repoName = import.meta.env.VITE_REPO_NAME;
-  const repoBranch = import.meta.env.VITE_REPO_BRANCH || 'main';
-  const adrDir = import.meta.env.VITE_ADR_DIR || 'docs/adr';
 
   useEffect(() => {
     // Check URL for code (Authorization Code flow with PKCE)
@@ -59,16 +40,16 @@ function App() {
 
   const handleAuthCode = async (code: string) => {
     try {
-      const verifier = localStorage.getItem('gitlab_code_verifier');
+      const verifier = getStoredCodeVerifier();
       if (!verifier) throw new Error('No code verifier found');
       
-      const redirectUri = window.location.origin + window.location.pathname;
-      const data = await exchangeCodeForToken(clientId, redirectUri, code, verifier);
+      const redirectUri = getRedirectUri(window.location);
+      const data = await exchangeCodeForToken(gitlabClientId, redirectUri, code, verifier);
       
       if (data.access_token) {
         setStoredToken(data.access_token);
         setToken(data.access_token);
-        localStorage.removeItem('gitlab_code_verifier');
+        removeStoredCodeVerifier();
         window.history.replaceState(null, '', window.location.pathname);
       }
     } catch (err: any) {
@@ -79,9 +60,7 @@ function App() {
 
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
-      // Validate origin is from AI Studio preview or localhost
-      const origin = event.origin;
-      if (!origin.endsWith('.run.app') && !origin.includes('localhost')) {
+      if (!isAllowedMessageOrigin(event.origin)) {
         return;
       }
       if (event.data?.type === 'GITLAB_AUTH_CODE' && event.data.code) {
@@ -116,18 +95,17 @@ function App() {
   };
 
   const login = async () => {
-    if (!clientId) {
+    if (!gitlabClientId) {
       alert('VITE_GITLAB_CLIENT_ID is not set in environment variables.');
       return;
     }
     
     const verifier = generateCodeVerifier();
-    localStorage.setItem('gitlab_code_verifier', verifier);
+    setStoredCodeVerifier(verifier);
     const challenge = await generateCodeChallenge(verifier);
     
-    // Use the exact current URL as the redirect URI to match GitLab config
-    const redirectUri = window.location.origin + window.location.pathname;
-    const authUrl = getGitLabAuthUrl(clientId, redirectUri, challenge);
+    const redirectUri = getRedirectUri(window.location);
+    const authUrl = getGitLabAuthUrl(gitlabClientId, redirectUri, challenge);
     const width = 600;
     const height = 700;
     const left = window.screenX + (window.outerWidth - width) / 2;
