@@ -14,9 +14,35 @@
       "automergeType": "pr"
     },
     {
-      "description": "Automerge JavaScript dependency updates after required checks pass.",
+      "description": "Keep the frontend toolchain in one grouped PR so coupled updates land together.",
       "matchManagers": [
         "npm"
+      ],
+      "matchPackageNames": [
+        "vite",
+        "@vitejs/plugin-react",
+        "vitest",
+        "jsdom",
+        "typescript",
+        "@types/node"
+      ],
+      "groupName": "frontend toolchain",
+      "groupSlug": "frontend-toolchain",
+      "rangeStrategy": "replace",
+      "automerge": false
+    },
+    {
+      "description": "Automerge non-toolchain JavaScript dependency updates after required checks pass.",
+      "matchManagers": [
+        "npm"
+      ],
+      "excludePackageNames": [
+        "vite",
+        "@vitejs/plugin-react",
+        "vitest",
+        "jsdom",
+        "typescript",
+        "@types/node"
       ],
       "automerge": true,
       "platformAutomerge": true,

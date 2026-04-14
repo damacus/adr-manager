@@ -160,6 +160,12 @@ function App() {
           </div>
           <h1 className="text-2xl font-bold text-gray-900 mb-2">ADR Manager</h1>
           <p className="text-gray-500 mb-8">Sign in with GitLab to manage your Architecture Decision Records.</p>
+
+          {error && (
+            <div className="mb-6 bg-red-50 text-red-600 p-4 rounded-lg border border-red-200 text-left">
+              {error}
+            </div>
+          )}
           
           <button
             onClick={login}

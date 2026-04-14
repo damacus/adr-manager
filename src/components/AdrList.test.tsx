@@ -199,4 +199,58 @@ describe('AdrList', () => {
     expect(createAdrStatusUpdateMr).not.toHaveBeenCalled();
     expect(await screen.findByText('Preview updated. The status badge now reflects your selected value.')).toBeInTheDocument();
   });
+
+  it('reuses cached ADR details when re-expanding the same ADR', async () => {
+    const user = userEvent.setup();
+
+    fetchAdrDetails.mockResolvedValue({
+      ...adrs[0],
+      rawContent: `---\nstatus: accepted\ndate: 2026-04-01\n---\n# Use Vite\n`,
+    });
+
+    render(
+      <AdrList
+        adrs={adrs}
+        onCreateNew={vi.fn()}
+        token="token"
+        repoName="group/project"
+        repoBranch="main"
+        adrDir="docs/adr"
+      />
+    );
+
+    await user.click(screen.getByText('Use Vite'));
+    await screen.findByLabelText('Update status');
+    await user.click(screen.getByText('Use Vite'));
+    await user.click(screen.getByText('Use Vite'));
+
+    expect(fetchAdrDetails).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows an inline error when status update MR creation fails', async () => {
+    const user = userEvent.setup();
+
+    fetchAdrDetails.mockResolvedValue({
+      ...adrs[0],
+      rawContent: `---\nstatus: accepted\ndate: 2026-04-01\n---\n# Use Vite\n`,
+    });
+    createAdrStatusUpdateMr.mockRejectedValue(new Error('Failed to create MR.'));
+
+    render(
+      <AdrList
+        adrs={adrs}
+        onCreateNew={vi.fn()}
+        token="token"
+        repoName="group/project"
+        repoBranch="main"
+        adrDir="docs/adr"
+      />
+    );
+
+    await user.click(screen.getByText('Use Vite'));
+    await user.selectOptions(screen.getByLabelText('Update status'), 'deprecated');
+    await user.click(screen.getByRole('button', { name: 'Create status update MR' }));
+
+    expect(await screen.findByText('Failed to create MR.')).toBeInTheDocument();
+  });
 });
