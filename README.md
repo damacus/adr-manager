@@ -6,7 +6,7 @@ ADR Manager is a Vite + React frontend for browsing Architecture Decision Record
 
 ### Prerequisites
 
-- Node.js 22+
+- Node.js 24+
 - `pnpm`
 
 ### Install
