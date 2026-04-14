@@ -125,6 +125,10 @@ export function AdrList({
         setDetailsCache((prev) => ({ ...prev, [adr.id]: details }));
       }
 
+      if (!details.rawContent) {
+        throw new Error('Failed to load ADR content for status update.');
+      }
+
       const result = await createAdrStatusUpdateMr(
         token,
         repoName,
