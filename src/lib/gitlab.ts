@@ -192,3 +192,74 @@ export const createAdrMr = async (token: string, repo: string, branch: string, d
 
   return await mrRes.json();
 };
+
+export const updateAdrStatusInContent = (content: string, status: AdrStatus) => {
+  const replaced = content.replace(
+    /(^|\n)(\*\s*)?[Ss]tatus:\s*.+(?=\n|$)/,
+    `$1${status === 'unknown' ? 'status: unknown' : `status: ${status}`}`
+  );
+
+  if (replaced === content) {
+    throw new Error('Failed to update ADR status: no status field found in file.');
+  }
+
+  return replaced;
+};
+
+export const createAdrStatusUpdateMr = async (
+  token: string,
+  repo: string,
+  branch: string,
+  dir: string,
+  id: string,
+  title: string,
+  rawContent: string,
+  status: AdrStatus
+) => {
+  const encodedRepo = encodeURIComponent(repo);
+  const fileName = `${dir}/${id}.md`;
+  const updateBranch = `update-adr-status-${id}-${Date.now()}`;
+  const updatedContent = updateAdrStatusInContent(rawContent, status);
+
+  const branchRes = await fetch(`${GITLAB_API}/projects/${encodedRepo}/repository/branches`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ branch: updateBranch, ref: branch })
+  });
+  if (!branchRes.ok) {
+    const err = await branchRes.json();
+    throw new Error(`Failed to create branch: ${err.message || JSON.stringify(err)}`);
+  }
+
+  const commitRes = await fetch(`${GITLAB_API}/projects/${encodedRepo}/repository/commits`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      branch: updateBranch,
+      commit_message: `docs: update ADR status for ${title}`,
+      actions: [{ action: 'update', file_path: fileName, content: updatedContent }]
+    })
+  });
+  if (!commitRes.ok) {
+    const err = await commitRes.json();
+    throw new Error(`Failed to commit status update: ${err.message || JSON.stringify(err)}`);
+  }
+
+  const mrRes = await fetch(`${GITLAB_API}/projects/${encodedRepo}/merge_requests`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      source_branch: updateBranch,
+      target_branch: branch,
+      title: `docs: update ADR status for ${title}`,
+      description: `This MR updates the ADR status for **${title}** to **${status}**.`,
+      remove_source_branch: true
+    })
+  });
+  if (!mrRes.ok) {
+    const err = await mrRes.json();
+    throw new Error(`Failed to create MR: ${err.message || JSON.stringify(err)}`);
+  }
+
+  return await mrRes.json();
+};

@@ -1,10 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
+  createAdrStatusUpdateMr,
   createAdrMr,
   exchangeCodeForToken,
   fetchAdrDetails,
   fetchAdrs,
   getGitLabAuthUrl,
+  updateAdrStatusInContent,
 } from './gitlab';
 
 const mockFetch = vi.fn();
@@ -212,6 +214,64 @@ Faster startup.
       expect.objectContaining({
         method: 'POST',
         body: expect.stringContaining('"title":"docs: add ADR for Use Vite"'),
+      })
+    );
+  });
+
+  it('updates only the status line in ADR content', () => {
+    const markdown = `---
+status: proposed
+date: 2026-01-15
+---
+# Use Vite
+`;
+
+    expect(updateAdrStatusInContent(markdown, 'accepted')).toContain('status: accepted');
+    expect(updateAdrStatusInContent(markdown, 'accepted')).toContain('date: 2026-01-15');
+  });
+
+  it('creates a branch, commit, and merge request for ADR status updates', async () => {
+    mockFetch
+      .mockResolvedValueOnce({
+        ok: true,
+        json: vi.fn().mockResolvedValue({ name: 'branch' }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: vi.fn().mockResolvedValue({ id: 'commit-2' }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: vi.fn().mockResolvedValue({ web_url: 'https://gitlab.com/mr/2' }),
+      });
+
+    const result = await createAdrStatusUpdateMr(
+      'token',
+      'group/project',
+      'main',
+      'docs/adr',
+      '001-use-vite',
+      'Use Vite',
+      `---\nstatus: proposed\ndate: 2026-01-15\n---\n# Use Vite\n`,
+      'accepted'
+    );
+
+    expect(result).toEqual({ web_url: 'https://gitlab.com/mr/2' });
+
+    expect(mockFetch).toHaveBeenNthCalledWith(
+      2,
+      expect.stringContaining('/repository/commits'),
+      expect.objectContaining({
+        method: 'POST',
+        body: expect.stringContaining('"action":"update"'),
+      })
+    );
+
+    expect(mockFetch).toHaveBeenNthCalledWith(
+      3,
+      expect.stringContaining('/merge_requests'),
+      expect.objectContaining({
+        body: expect.stringContaining('"title":"docs: update ADR status for Use Vite"'),
       })
     );
   });
