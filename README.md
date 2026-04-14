@@ -40,3 +40,5 @@ VITE_ADR_DIR=docs/adr
 ```
 
 `VITE_REPO_BRANCH` defaults to `main` and `VITE_ADR_DIR` defaults to `docs/adr`.
+
+For GitLab Pages deployments, set the same `VITE_*` values in the project's CI/CD variables so they are available during `pnpm build`.
