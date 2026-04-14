@@ -17,6 +17,7 @@ const {
 }));
 
 vi.mock('./lib/config', () => ({
+  isDevMode: false,
   gitlabClientId: 'gitlab-client-id',
   repoName: 'group/project',
   repoBranch: 'main',

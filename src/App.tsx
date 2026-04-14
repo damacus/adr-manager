@@ -5,7 +5,8 @@ import { Adr } from './types';
 import { fetchAdrs, getGitLabAuthUrl, exchangeCodeForToken } from './lib/gitlab';
 import { generateCodeVerifier, generateCodeChallenge } from './lib/pkce';
 import { getRedirectUri, isAllowedMessageOrigin } from './lib/auth';
-import { adrDir, gitlabClientId, repoBranch, repoName } from './lib/config';
+import { adrDir, gitlabClientId, isDevMode, repoBranch, repoName } from './lib/config';
+import { mockAdrs } from './lib/mockAdrs';
 import {
   getStoredCodeVerifier,
   getStoredToken,
@@ -16,7 +17,7 @@ import {
 } from './lib/tokenStorage';
 
 function App() {
-  const [token, setToken] = useState<string | null>(getStoredToken());
+  const [token, setToken] = useState<string | null>(() => (isDevMode ? 'dev-mode-token' : getStoredToken()));
   const [adrs, setAdrs] = useState<Adr[]>([]);
   const [isCreating, setIsCreating] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -72,12 +73,22 @@ function App() {
   }, []);
 
   useEffect(() => {
+    if (isDevMode) {
+      setAdrs(mockAdrs);
+      return;
+    }
+
     if (token && repoName) {
       loadAdrs();
     }
   }, [token, repoName]);
 
   const loadAdrs = async () => {
+    if (isDevMode) {
+      setAdrs(mockAdrs);
+      return;
+    }
+
     setLoading(true);
     setError(null);
     try {
@@ -95,6 +106,12 @@ function App() {
   };
 
   const login = async () => {
+    if (isDevMode) {
+      setToken('dev-mode-token');
+      setAdrs(mockAdrs);
+      return;
+    }
+
     if (!gitlabClientId) {
       alert('VITE_GITLAB_CLIENT_ID is not set in environment variables.');
       return;
@@ -123,6 +140,12 @@ function App() {
   };
 
   const logout = () => {
+    if (isDevMode) {
+      setToken('dev-mode-token');
+      setAdrs(mockAdrs);
+      return;
+    }
+
     removeStoredToken();
     setToken(null);
     setAdrs([]);
@@ -200,7 +223,9 @@ function App() {
             token={token} 
             repoName={repoName} 
             repoBranch={repoBranch} 
-            adrDir={adrDir} 
+            adrDir={adrDir}
+            statusEditingEnabled
+            statusEditingPreviewOnly={isDevMode}
           />
         )}
       </main>
