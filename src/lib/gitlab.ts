@@ -1,7 +1,13 @@
-import { Adr } from '../types';
+import { Adr, AdrStatus } from '../types';
 import { generateMadr } from './madr';
 
 const GITLAB_API = 'https://gitlab.com/api/v4';
+const ADR_STATUSES: readonly AdrStatus[] = ['proposed', 'accepted', 'rejected', 'deprecated', 'superseded', 'unknown'];
+
+const parseAdrStatus = (status: string | undefined): AdrStatus => {
+  const normalizedStatus = status?.trim().toLowerCase();
+  return ADR_STATUSES.includes(normalizedStatus as AdrStatus) ? (normalizedStatus as AdrStatus) : 'unknown';
+};
 
 export const getGitLabAuthUrl = (clientId: string, redirectUri: string, codeChallenge: string) => {
   return `https://gitlab.com/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&state=adr-manager&scope=api&code_challenge=${codeChallenge}&code_challenge_method=S256`;
@@ -30,7 +36,7 @@ export const exchangeCodeForToken = async (clientId: string, redirectUri: string
   return await res.json();
 };
 
-export const fetchAdrs = async (token: string, repo: string, branch: string, dir: string) => {
+export const fetchAdrs = async (token: string, repo: string, branch: string, dir: string): Promise<Adr[]> => {
   const encodedRepo = encodeURIComponent(repo);
   const res = await fetch(`${GITLAB_API}/projects/${encodedRepo}/repository/tree?path=${dir}&ref=${branch}`, {
     headers: { Authorization: `Bearer ${token}` }
@@ -53,7 +59,7 @@ export const fetchAdrs = async (token: string, repo: string, branch: string, dir
         return {
           id,
           title: f.name.replace('.md', '').replace(/-/g, ' '),
-          status: details.status,
+          status: parseAdrStatus(details.status),
           date: details.date,
           author: details.author,
           context: details.context,
@@ -66,7 +72,7 @@ export const fetchAdrs = async (token: string, repo: string, branch: string, dir
         return {
           id,
           title: f.name.replace('.md', '').replace(/-/g, ' '),
-          status: 'unknown',
+          status: 'unknown' as const,
           date: new Date().toISOString(),
           author: 'Unknown',
           context: '',
@@ -127,7 +133,7 @@ export const fetchAdrDetails = async (token: string, repo: string, branch: strin
   };
 
   return {
-    status: statusMatch ? statusMatch[1].trim().toLowerCase() : 'unknown',
+    status: parseAdrStatus(statusMatch?.[1]),
     date: dateMatch ? dateMatch[1].trim() : new Date().toISOString(),
     author,
     context: extractSection(/^##\s*(Context and Problem Statement|Context)\s*$/im),
