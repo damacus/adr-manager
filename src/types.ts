@@ -1,10 +1,19 @@
+export type AdrStatus =
+  | 'proposed'
+  | 'accepted'
+  | 'rejected'
+  | 'deprecated'
+  | 'superseded'
+  | 'unknown';
+
 export interface Adr {
   id: string;
   title: string;
-  status: 'proposed' | 'accepted' | 'rejected' | 'deprecated' | 'superseded' | 'unknown';
+  status: AdrStatus;
   date: string;
   author: string;
   context: string;
   decision: string;
   consequences: string;
+  url?: string;
 }
