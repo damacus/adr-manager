@@ -60,7 +60,7 @@ function App() {
 
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
-      if (!isAllowedMessageOrigin(event.origin)) {
+      if (!isAllowedMessageOrigin(event.origin, window.location)) {
         return;
       }
       if (event.data?.type === 'GITLAB_AUTH_CODE' && event.data.code) {

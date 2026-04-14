@@ -121,7 +121,7 @@ describe('App', () => {
 
     window.dispatchEvent(
       new MessageEvent('message', {
-        origin: 'https://preview.run.app',
+        origin: 'http://localhost:3000',
         data: { type: 'GITLAB_AUTH_CODE', code: 'oauth-code' },
       })
     );
