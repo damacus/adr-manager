@@ -144,6 +144,57 @@ describe('App', () => {
     expect(localStorage.getItem('gitlab_code_verifier')).toBeNull();
   });
 
+  it('ignores auth codes received from disallowed origins', async () => {
+    render(<App />);
+
+    window.dispatchEvent(
+      new MessageEvent('message', {
+        origin: 'https://evil.example.com',
+        data: { type: 'GITLAB_AUTH_CODE', code: 'oauth-code' },
+      })
+    );
+
+    await waitFor(() => {
+      expect(exchangeCodeForToken).not.toHaveBeenCalled();
+    });
+  });
+
+  it('handles the same-window auth callback path', async () => {
+    localStorage.setItem('gitlab_code_verifier', 'stored-verifier');
+    exchangeCodeForToken.mockResolvedValue({ access_token: 'new-token' });
+    fetchAdrs.mockResolvedValue([]);
+    window.history.replaceState(null, '', '/?code=oauth-code');
+
+    render(<App />);
+
+    await waitFor(() => {
+      expect(exchangeCodeForToken).toHaveBeenCalledWith(
+        'gitlab-client-id',
+        'http://localhost:3000/',
+        'oauth-code',
+        'stored-verifier'
+      );
+    });
+
+    await waitFor(() => {
+      expect(fetchAdrs).toHaveBeenCalledWith('new-token', 'group/project', 'main', 'docs/adr');
+    });
+
+    expect(localStorage.getItem('gitlab_token')).toBe('new-token');
+  });
+
+  it('shows an auth error when code exchange fails without storing a token', async () => {
+    localStorage.setItem('gitlab_code_verifier', 'stored-verifier');
+    exchangeCodeForToken.mockRejectedValue(new Error('PKCE mismatch'));
+    window.history.replaceState(null, '', '/?code=oauth-code');
+
+    render(<App />);
+
+    expect(await screen.findByText('Failed to authenticate with GitLab: PKCE mismatch')).toBeInTheDocument();
+    expect(localStorage.getItem('gitlab_token')).toBeNull();
+    expect(fetchAdrs).not.toHaveBeenCalled();
+  });
+
   it('logs out when ADR loading returns a 401 error', async () => {
     localStorage.setItem('gitlab_token', 'expired-token');
     fetchAdrs.mockRejectedValue(new Error('[401] unauthorized'));

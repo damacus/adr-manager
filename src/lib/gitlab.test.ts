@@ -177,6 +177,18 @@ Faster startup.
     );
   });
 
+  it('rejects ADR detail requests when the file fetch fails', async () => {
+    mockFetch.mockResolvedValue({
+      ok: false,
+      status: 404,
+      json: vi.fn(),
+    });
+
+    await expect(fetchAdrDetails('token', 'group/project', 'main', 'docs/adr', '001-use-vite')).rejects.toThrow(
+      '[404] Failed to fetch ADR details'
+    );
+  });
+
   it('creates a branch, commit, and merge request with MADR content', async () => {
     mockFetch
       .mockResolvedValueOnce({
@@ -230,6 +242,12 @@ date: 2026-01-15
     expect(updateAdrStatusInContent(markdown, 'accepted')).toContain('date: 2026-01-15');
   });
 
+  it('throws when ADR content has no status field to update', () => {
+    expect(() => updateAdrStatusInContent('# Use Vite\n', 'accepted')).toThrow(
+      'Failed to update ADR status: no status field found in file.'
+    );
+  });
+
   it('creates a branch, commit, and merge request for ADR status updates', async () => {
     mockFetch
       .mockResolvedValueOnce({
@@ -274,5 +292,79 @@ date: 2026-01-15
         body: expect.stringContaining('"title":"docs: update ADR status for Use Vite"'),
       })
     );
+  });
+
+  it('surfaces branch creation failures for ADR status updates', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      json: vi.fn().mockResolvedValue({ message: 'branch failed' }),
+    });
+
+    await expect(
+      createAdrStatusUpdateMr(
+        'token',
+        'group/project',
+        'main',
+        'docs/adr',
+        '001-use-vite',
+        'Use Vite',
+        `---\nstatus: proposed\ndate: 2026-01-15\n---\n# Use Vite\n`,
+        'accepted'
+      )
+    ).rejects.toThrow('Failed to create branch: branch failed');
+  });
+
+  it('surfaces commit failures for ADR status updates', async () => {
+    mockFetch
+      .mockResolvedValueOnce({
+        ok: true,
+        json: vi.fn().mockResolvedValue({ name: 'branch' }),
+      })
+      .mockResolvedValueOnce({
+        ok: false,
+        json: vi.fn().mockResolvedValue({ message: 'commit failed' }),
+      });
+
+    await expect(
+      createAdrStatusUpdateMr(
+        'token',
+        'group/project',
+        'main',
+        'docs/adr',
+        '001-use-vite',
+        'Use Vite',
+        `---\nstatus: proposed\ndate: 2026-01-15\n---\n# Use Vite\n`,
+        'accepted'
+      )
+    ).rejects.toThrow('Failed to commit status update: commit failed');
+  });
+
+  it('surfaces merge request failures for ADR status updates', async () => {
+    mockFetch
+      .mockResolvedValueOnce({
+        ok: true,
+        json: vi.fn().mockResolvedValue({ name: 'branch' }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: vi.fn().mockResolvedValue({ id: 'commit-2' }),
+      })
+      .mockResolvedValueOnce({
+        ok: false,
+        json: vi.fn().mockResolvedValue({ message: 'mr failed' }),
+      });
+
+    await expect(
+      createAdrStatusUpdateMr(
+        'token',
+        'group/project',
+        'main',
+        'docs/adr',
+        '001-use-vite',
+        'Use Vite',
+        `---\nstatus: proposed\ndate: 2026-01-15\n---\n# Use Vite\n`,
+        'accepted'
+      )
+    ).rejects.toThrow('Failed to create MR: mr failed');
   });
 });
