@@ -1,3 +1,4 @@
+---
 image: node:24
 
 variables:
@@ -30,6 +31,8 @@ test:
 pages:
   stage: deploy
   script:
+    - test -n "$VITE_GITLAB_CLIENT_ID" && echo "VITE_GITLAB_CLIENT_ID present" || (echo "VITE_GITLAB_CLIENT_ID missing" && exit 1)
+    - test -n "$VITE_REPO_NAME" && echo "VITE_REPO_NAME present" || (echo "VITE_REPO_NAME missing" && exit 1)
     - pnpm build
     - rm -rf public
     - mv dist public
