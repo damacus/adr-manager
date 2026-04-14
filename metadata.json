@@ -1,0 +1,6 @@
+{
+  "name": "ADR Manager",
+  "description": "A self-hosted Architecture Decision Record (ADR) manager with Git PR/MR integration.",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}
