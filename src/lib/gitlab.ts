@@ -130,9 +130,9 @@ export const fetchAdrDetails = async (token: string, repo: string, branch: strin
     status: statusMatch ? statusMatch[1].trim().toLowerCase() : 'unknown',
     date: dateMatch ? dateMatch[1].trim() : new Date().toISOString(),
     author,
-    context: extractSection(/##\s*(Context and Problem Statement|Context)[^\n]*/i),
-    decision: extractSection(/##\s*(Decision Outcome|Decision)[^\n]*/i),
-    consequences: extractSection(/##\s*(Positive Consequences|Consequences)[^\n]*/i),
+    context: extractSection(/^##\s*(Context and Problem Statement|Context)\s*$/im),
+    decision: extractSection(/^##\s*(Decision Outcome|Decision)\s*$/im),
+    consequences: extractSection(/^###?\s*(Positive Consequences|Consequences)\s*$/im),
     rawContent: content
   };
 };

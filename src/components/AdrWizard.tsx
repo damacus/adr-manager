@@ -127,7 +127,7 @@ export function AdrWizard({ onCancel, onComplete, token, repoName, repoBranch, a
             >
               <h2 className="text-xl font-semibold text-gray-900">Context & Decision</h2>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Context</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Context <span className="text-gray-400 font-normal">(optional)</span></label>
                 <p className="text-xs text-gray-500 mb-2">What is the issue that we're seeing that is motivating this decision or change?</p>
                 <textarea
                   value={formData.context}
@@ -159,7 +159,7 @@ export function AdrWizard({ onCancel, onComplete, token, repoName, repoBranch, a
             >
               <h2 className="text-xl font-semibold text-gray-900">Consequences & Publish</h2>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Consequences</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Consequences <span className="text-gray-400 font-normal">(optional)</span></label>
                 <p className="text-xs text-gray-500 mb-2">What becomes easier or more difficult to do because of this change?</p>
                 <textarea
                   value={formData.consequences}
@@ -199,7 +199,7 @@ export function AdrWizard({ onCancel, onComplete, token, repoName, repoBranch, a
         {step < 3 ? (
           <button
             onClick={nextStep}
-            disabled={(step === 1 && !formData.title) || isSubmitting}
+            disabled={(step === 1 && !formData.title) || (step === 2 && !formData.decision) || isSubmitting}
             className="bg-gray-900 text-white px-6 py-2 rounded-lg font-medium hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
           >
             Next
