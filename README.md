@@ -1,20 +1,42 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# ADR Manager
 
-# Run and deploy your AI Studio app
+ADR Manager is a Vite + React frontend for browsing Architecture Decision Records stored in a GitLab repository and creating new ADR merge requests from a guided wizard.
 
-This contains everything you need to run your app locally.
+## Development
 
-View your app in AI Studio: https://ai.studio/apps/1103b2d3-f17f-4396-a639-560b5c3a16b5
+### Prerequisites
 
-## Run Locally
+- Node.js 22+
+- `pnpm`
 
-**Prerequisites:**  Node.js
+### Install
 
+```bash
+pnpm install
+```
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+### Run locally
+
+```bash
+pnpm dev
+```
+
+### Verify
+
+```bash
+pnpm test
+pnpm lint
+```
+
+## Configuration
+
+Set these variables in a local `.env` file:
+
+```env
+VITE_GITLAB_CLIENT_ID=your_gitlab_oauth_app_id
+VITE_REPO_NAME=group/project
+VITE_REPO_BRANCH=main
+VITE_ADR_DIR=docs/adr
+```
+
+`VITE_REPO_BRANCH` defaults to `main` and `VITE_ADR_DIR` defaults to `docs/adr`.
