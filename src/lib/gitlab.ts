@@ -4,7 +4,7 @@ import { generateMadr } from './madr';
 const GITLAB_API = 'https://gitlab.com/api/v4';
 
 export const getGitLabAuthUrl = (clientId: string, redirectUri: string, codeChallenge: string) => {
-  return `https://gitlab.com/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&state=adr-manager&scope=api read_user&code_challenge=${codeChallenge}&code_challenge_method=S256`;
+  return `https://gitlab.com/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&state=adr-manager&scope=api&code_challenge=${codeChallenge}&code_challenge_method=S256`;
 };
 
 export const exchangeCodeForToken = async (clientId: string, redirectUri: string, code: string, codeVerifier: string) => {
