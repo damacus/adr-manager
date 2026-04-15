@@ -42,3 +42,11 @@ VITE_ADR_DIR=docs/adr
 `VITE_REPO_BRANCH` defaults to `main` and `VITE_ADR_DIR` defaults to `docs/adr`.
 
 For GitLab Pages deployments, set the same `VITE_*` values in the project's CI/CD variables so they are available during `pnpm build`.
+
+## Authentication
+
+ADR Manager uses a session-only GitLab OAuth flow in the browser. The app keeps the signed-in user's GitLab access token only for the active tab session, so reloading the page or reopening the app requires signing in again.
+
+The app acts with the permissions of the GitLab user who completes the OAuth flow. Any repository reads or writes come from that user's access rights, not from a shared service account.
+
+Because this is deployed as a GitLab Pages SPA, it does not use a backend session store or server-side token exchange. That deployment model is the reason the auth flow is intentionally session-scoped rather than persistent across browser restarts.

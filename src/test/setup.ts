@@ -1,28 +1,42 @@
 import '@testing-library/jest-dom/vitest';
 import { vi } from 'vitest';
 
-const storage = new Map<string, string>();
+const localStorageState = new Map<string, string>();
+const sessionStorageState = new Map<string, string>();
 
-const storageMock = {
-  getItem: (key: string) => storage.get(key) ?? null,
+const createStorageMock = (state: Map<string, string>) => ({
+  getItem: (key: string) => state.get(key) ?? null,
   setItem: (key: string, value: string) => {
-    storage.set(key, value);
+    state.set(key, value);
   },
   removeItem: (key: string) => {
-    storage.delete(key);
+    state.delete(key);
   },
   clear: () => {
-    storage.clear();
+    state.clear();
   },
-};
+});
+
+const localStorageMock = createStorageMock(localStorageState);
+const sessionStorageMock = createStorageMock(sessionStorageState);
 
 Object.defineProperty(globalThis, 'localStorage', {
-  value: storageMock,
+  value: localStorageMock,
   configurable: true,
 });
 
 Object.defineProperty(window, 'localStorage', {
-  value: storageMock,
+  value: localStorageMock,
+  configurable: true,
+});
+
+Object.defineProperty(globalThis, 'sessionStorage', {
+  value: sessionStorageMock,
+  configurable: true,
+});
+
+Object.defineProperty(window, 'sessionStorage', {
+  value: sessionStorageMock,
   configurable: true,
 });
 
