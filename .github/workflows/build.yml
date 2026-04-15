@@ -76,6 +76,13 @@ jobs:
             exit 1
           fi
 
-          SANITIZED_URL="${GITLAB_REPOSITORY_URL#https://}"
-          git remote add gitlab "https://oauth2:${GITLAB_PUSH_TOKEN}@${SANITIZED_URL}"
-          git push --force gitlab HEAD:main
+          AUTH_HEADER="$(printf 'oauth2:%s' "$GITLAB_PUSH_TOKEN" | base64 | tr -d '\n')"
+          git remote add gitlab "$GITLAB_REPOSITORY_URL"
+
+          REMOTE_MAIN_SHA="$(git -c http.extraheader="Authorization: Basic ${AUTH_HEADER}" ls-remote --heads gitlab main | awk '{print $1}')"
+
+          if [ -n "$REMOTE_MAIN_SHA" ]; then
+            git -c http.extraheader="Authorization: Basic ${AUTH_HEADER}" push --force-with-lease=refs/heads/main:${REMOTE_MAIN_SHA} gitlab HEAD:main
+          else
+            git -c http.extraheader="Authorization: Basic ${AUTH_HEADER}" push gitlab HEAD:main
+          fi
