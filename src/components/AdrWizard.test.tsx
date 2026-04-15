@@ -26,6 +26,18 @@ describe('AdrWizard', () => {
         repoName="group/project"
         repoBranch="main"
         adrDir="docs/adr"
+        existingAdrs={[
+          {
+            id: 'adr-001',
+            title: 'Adopt React',
+            status: 'accepted',
+            date: '2026-04-10',
+            author: 'Alice',
+            context: 'Existing context',
+            decision: 'Existing decision',
+            consequences: 'Existing consequences',
+          },
+        ]}
       />
     );
 
@@ -33,6 +45,7 @@ describe('AdrWizard', () => {
     expect(nextButton).toBeDisabled();
 
     await user.type(screen.getByPlaceholderText(/use react for the frontend/i), 'Use Vite');
+    await user.selectOptions(screen.getByRole('combobox', { name: /related adr/i }), 'adr-001');
     expect(nextButton).toBeEnabled();
     await user.click(nextButton);
 
@@ -42,6 +55,10 @@ describe('AdrWizard', () => {
     await screen.findByText(/context & decision/i);
     const stepTwoTextareas = Array.from(document.querySelectorAll('textarea'));
     expect(stepTwoTextareas).toHaveLength(2);
+
+    await user.type(stepTwoTextareas[0], 'The current tooling is too slow.');
+    expect(stepTwoNextButton).toBeDisabled();
+
     await user.type(stepTwoTextareas[1], 'Adopt Vite for development.');
     expect(stepTwoNextButton).toBeEnabled();
     await user.click(stepTwoNextButton);
@@ -61,6 +78,8 @@ describe('AdrWizard', () => {
         'Use Vite',
         expect.objectContaining({
           title: 'Use Vite',
+          relatedAdrId: 'adr-001',
+          context: 'The current tooling is too slow.',
           decision: 'Adopt Vite for development.',
           consequences: 'Faster startup and HMR.',
         })

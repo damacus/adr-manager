@@ -15,5 +15,6 @@ export interface Adr {
   context: string;
   decision: string;
   consequences: string;
+  relatedAdrId?: string;
   url?: string;
 }

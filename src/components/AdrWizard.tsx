@@ -11,15 +11,17 @@ interface AdrWizardProps {
   repoName: string;
   repoBranch: string;
   adrDir: string;
+  existingAdrs: Adr[];
 }
 
-export function AdrWizard({ onCancel, onComplete, token, repoName, repoBranch, adrDir }: AdrWizardProps) {
+export function AdrWizard({ onCancel, onComplete, token, repoName, repoBranch, adrDir, existingAdrs }: AdrWizardProps) {
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState<Partial<Adr>>({
     title: '',
     status: 'proposed',
+    relatedAdrId: '',
     context: '',
     decision: '',
     consequences: '',
@@ -28,6 +30,9 @@ export function AdrWizard({ onCancel, onComplete, token, repoName, repoBranch, a
   const updateForm = (field: keyof Adr, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
+
+  const isStepOneValid = Boolean(formData.title?.trim());
+  const isStepTwoValid = Boolean(formData.context?.trim() && formData.decision?.trim());
 
   const nextStep = () => setStep((s) => Math.min(s + 1, 3));
   const prevStep = () => setStep((s) => Math.max(s - 1, 1));
@@ -94,8 +99,9 @@ export function AdrWizard({ onCancel, onComplete, token, repoName, repoBranch, a
             >
               <h2 className="text-xl font-semibold text-gray-900">Basic Information</h2>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Title</label>
+                <label htmlFor="adr-title" className="block text-sm font-medium text-gray-700 mb-2">Title</label>
                 <input
+                  id="adr-title"
                   type="text"
                   value={formData.title}
                   onChange={(e) => updateForm('title', e.target.value)}
@@ -104,14 +110,34 @@ export function AdrWizard({ onCancel, onComplete, token, repoName, repoBranch, a
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Initial Status</label>
+                <label htmlFor="adr-status" className="block text-sm font-medium text-gray-700 mb-2">Initial Status</label>
                 <select
+                  id="adr-status"
                   value={formData.status}
                   onChange={(e) => updateForm('status', e.target.value)}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent outline-none transition-all bg-white"
                 >
                   <option value="proposed">Proposed</option>
                   <option value="accepted">Accepted</option>
+                </select>
+              </div>
+              <div>
+                <label htmlFor="adr-related" className="block text-sm font-medium text-gray-700 mb-2">Related ADR <span className="text-gray-400 font-normal">(optional)</span></label>
+                <p className="text-xs text-gray-500 mb-2">Link this ADR to an existing decision record if it builds on, amends, or relates to one.</p>
+                <select
+                  id="adr-related"
+                  value={formData.relatedAdrId}
+                  onChange={(e) => updateForm('relatedAdrId', e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent outline-none transition-all bg-white"
+                >
+                  <option value="">No related ADR</option>
+                  {[...existingAdrs]
+                    .sort((a, b) => a.title.localeCompare(b.title))
+                    .map((adr) => (
+                      <option key={adr.id} value={adr.id}>
+                        {adr.id} - {adr.title}
+                      </option>
+                    ))}
                 </select>
               </div>
             </motion.div>
@@ -127,21 +153,25 @@ export function AdrWizard({ onCancel, onComplete, token, repoName, repoBranch, a
             >
               <h2 className="text-xl font-semibold text-gray-900">Context & Decision</h2>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Context <span className="text-gray-400 font-normal">(optional)</span></label>
+                <label htmlFor="adr-context" className="block text-sm font-medium text-gray-700 mb-2">Context</label>
                 <p className="text-xs text-gray-500 mb-2">What is the issue that we're seeing that is motivating this decision or change?</p>
                 <textarea
+                  id="adr-context"
                   value={formData.context}
                   onChange={(e) => updateForm('context', e.target.value)}
+                  required
                   rows={4}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent outline-none transition-all resize-none"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Decision</label>
+                <label htmlFor="adr-decision" className="block text-sm font-medium text-gray-700 mb-2">Decision</label>
                 <p className="text-xs text-gray-500 mb-2">What is the change that we're proposing and/or doing?</p>
                 <textarea
+                  id="adr-decision"
                   value={formData.decision}
                   onChange={(e) => updateForm('decision', e.target.value)}
+                  required
                   rows={4}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent outline-none transition-all resize-none"
                 />
@@ -159,9 +189,10 @@ export function AdrWizard({ onCancel, onComplete, token, repoName, repoBranch, a
             >
               <h2 className="text-xl font-semibold text-gray-900">Consequences & Publish</h2>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Consequences <span className="text-gray-400 font-normal">(optional)</span></label>
+                <label htmlFor="adr-consequences" className="block text-sm font-medium text-gray-700 mb-2">Consequences <span className="text-gray-400 font-normal">(optional)</span></label>
                 <p className="text-xs text-gray-500 mb-2">What becomes easier or more difficult to do because of this change?</p>
                 <textarea
+                  id="adr-consequences"
                   value={formData.consequences}
                   onChange={(e) => updateForm('consequences', e.target.value)}
                   rows={8}
@@ -199,7 +230,7 @@ export function AdrWizard({ onCancel, onComplete, token, repoName, repoBranch, a
         {step < 3 ? (
           <button
             onClick={nextStep}
-            disabled={(step === 1 && !formData.title) || (step === 2 && !formData.decision) || isSubmitting}
+            disabled={(step === 1 && !isStepOneValid) || (step === 2 && !isStepTwoValid) || isSubmitting}
             className="bg-gray-900 text-white px-6 py-2 rounded-lg font-medium hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
           >
             Next
