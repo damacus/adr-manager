@@ -67,6 +67,7 @@ describe('gitlab helpers', () => {
     const markdown = `---
 status: accepted
 date: 2026-01-15
+informs: 002-use-forks
 ---
 # Use Vite
 
@@ -126,6 +127,7 @@ Faster startup.
         context: 'Slow local development.',
         decision: 'Chosen option: "Use Vite", because it starts fast.',
         consequences: 'Faster startup.',
+        relatedAdrId: '002-use-forks',
         url: 'https://gitlab.com/group/project/-/blob/main/docs/adr/001-use-vite.md',
       }),
     ]);
@@ -174,6 +176,7 @@ Faster startup.
         context: 'Context',
         decision: 'Decision',
         consequences: 'Consequence',
+        relatedAdrId: undefined,
       })
     );
   });

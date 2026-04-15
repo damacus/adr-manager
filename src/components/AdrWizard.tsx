@@ -65,7 +65,6 @@ export function AdrWizard({ onCancel, onComplete, token, repoName, repoBranch, a
         <p className="text-gray-500 mt-2">Document a new architectural decision.</p>
       </div>
 
-      {/* Progress Bar */}
       <div className="flex items-center gap-2 mb-8">
         {[1, 2, 3].map((i) => (
           <React.Fragment key={i}>
@@ -109,17 +108,25 @@ export function AdrWizard({ onCancel, onComplete, token, repoName, repoBranch, a
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent outline-none transition-all"
                 />
               </div>
-              <div>
-                <label htmlFor="adr-status" className="block text-sm font-medium text-gray-700 mb-2">Initial Status</label>
-                <select
-                  id="adr-status"
-                  value={formData.status}
-                  onChange={(e) => updateForm('status', e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent outline-none transition-all bg-white"
-                >
-                  <option value="proposed">Proposed</option>
-                  <option value="accepted">Accepted</option>
-                </select>
+              <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
+                <div className="mb-3">
+                  <h3 className="text-sm font-semibold text-gray-900">Publishing settings</h3>
+                  <p className="mt-1 text-xs text-gray-500">
+                    This is workflow metadata, not the decision itself.
+                  </p>
+                </div>
+                <div>
+                  <label htmlFor="adr-status" className="block text-sm font-medium text-gray-700 mb-2">Initial status</label>
+                  <select
+                    id="adr-status"
+                    value={formData.status}
+                    onChange={(e) => updateForm('status', e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent outline-none transition-all bg-white"
+                  >
+                    <option value="proposed">Proposed</option>
+                    <option value="accepted">Accepted</option>
+                  </select>
+                </div>
               </div>
               <div>
                 <label htmlFor="adr-related" className="block text-sm font-medium text-gray-700 mb-2">Related ADR <span className="text-gray-400 font-normal">(optional)</span></label>
@@ -199,11 +206,11 @@ export function AdrWizard({ onCancel, onComplete, token, repoName, repoBranch, a
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent outline-none transition-all resize-none"
                 />
               </div>
-              
+
               <div className="bg-blue-50 text-blue-800 p-4 rounded-lg text-sm mt-6 flex items-start gap-3">
                 <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
                 <p>
-                  This will commit the ADR as a Markdown file to your repository's configured ADR directory and open a new Pull/Merge Request for review using your connected account.
+                  This will commit the ADR as a Markdown file to your repository&apos;s configured ADR directory and open a new Pull/Merge Request for review using your connected account.
                 </p>
               </div>
 
@@ -226,7 +233,7 @@ export function AdrWizard({ onCancel, onComplete, token, repoName, repoBranch, a
           <ArrowLeft className="w-4 h-4" />
           Previous
         </button>
-        
+
         {step < 3 ? (
           <button
             onClick={nextStep}

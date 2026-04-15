@@ -70,6 +70,7 @@ export const fetchAdrs = async (token: string, repo: string, branch: string, dir
           context: details.context,
           decision: details.decision,
           consequences: details.consequences,
+          relatedAdrId: details.relatedAdrId,
           url: `https://gitlab.com/${repo}/-/blob/${branch}/${dir}/${f.name}`
         };
       } catch (e) {
@@ -123,6 +124,7 @@ export const fetchAdrDetails = async (token: string, repo: string, branch: strin
   // MADR status is usually in the format "status: proposed" or "* Status: proposed"
   const statusMatch = content.match(/(?:^|\n)(?:\*\s*)?[Ss]tatus:\s*(.+)/i);
   const dateMatch = content.match(/(?:^|\n)(?:\*\s*)?[Dd]ate:\s*(.+)/i);
+  const relatedAdrMatch = content.match(/(?:^|\n)[Ii]nforms:\s*(.+)/);
   
   const extractSection = (headerRegex: RegExp) => {
     const match = content.match(headerRegex);
@@ -144,6 +146,7 @@ export const fetchAdrDetails = async (token: string, repo: string, branch: strin
     context: extractSection(/^##\s*(Context and Problem Statement|Context)\s*$/im),
     decision: extractSection(/^##\s*(Decision Outcome|Decision)\s*$/im),
     consequences: extractSection(/^###?\s*(Positive Consequences|Consequences)\s*$/im),
+    relatedAdrId: relatedAdrMatch?.[1]?.trim() || undefined,
     rawContent: content
   };
 };
