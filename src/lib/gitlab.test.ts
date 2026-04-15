@@ -22,12 +22,13 @@ describe('gitlab helpers', () => {
   });
 
   it('builds the OAuth URL with PKCE parameters', () => {
-    const url = getGitLabAuthUrl('client-id', 'https://app.example.com/callback', 'challenge-value');
+    const url = getGitLabAuthUrl('client-id', 'https://app.example.com/callback', 'challenge-value', 'state-123');
 
     expect(url).toContain('client_id=client-id');
     expect(url).toContain('redirect_uri=https%3A%2F%2Fapp.example.com%2Fcallback');
     expect(url).toContain('code_challenge=challenge-value');
     expect(url).toContain('code_challenge_method=S256');
+    expect(url).toContain('state=state-123');
   });
 
   it('returns the token payload on a successful code exchange', async () => {
