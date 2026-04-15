@@ -130,7 +130,14 @@ describe('AdrList', () => {
     );
 
     await user.click(screen.getByText('Use Vite'));
-    await user.selectOptions(screen.getByLabelText('Update status'), 'deprecated');
+    const changeStatusSelect = screen.getByLabelText('Change status');
+    const statusUpdateButton = screen.getByRole('button', { name: 'Create status update MR' });
+
+    expect(changeStatusSelect).toHaveValue('');
+    expect(statusUpdateButton).toBeDisabled();
+
+    await user.selectOptions(changeStatusSelect, 'deprecated');
+    expect(statusUpdateButton).toBeEnabled();
     await user.click(screen.getByRole('button', { name: 'Create status update MR' }));
 
     expect(createAdrStatusUpdateMr).toHaveBeenCalledWith(
@@ -169,7 +176,7 @@ describe('AdrList', () => {
 
     await user.click(screen.getByText('Use Vite'));
 
-    expect(screen.queryByLabelText('Update status')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Change status')).not.toBeInTheDocument();
   });
 
   it('supports preview-only status changes without creating a merge request', async () => {
@@ -193,7 +200,14 @@ describe('AdrList', () => {
     );
 
     await user.click(screen.getByText('Use Vite'));
-    await user.selectOptions(screen.getByLabelText('Update status'), 'deprecated');
+    const changeStatusSelect = screen.getByLabelText('Change status');
+    const previewButton = screen.getByRole('button', { name: 'Preview status change' });
+
+    expect(changeStatusSelect).toHaveValue('');
+    expect(previewButton).toBeDisabled();
+
+    await user.selectOptions(changeStatusSelect, 'deprecated');
+    expect(previewButton).toBeEnabled();
     await user.click(screen.getByRole('button', { name: 'Preview status change' }));
 
     expect(createAdrStatusUpdateMr).not.toHaveBeenCalled();
@@ -220,7 +234,7 @@ describe('AdrList', () => {
     );
 
     await user.click(screen.getByText('Use Vite'));
-    await screen.findByLabelText('Update status');
+    await screen.findByLabelText('Change status');
     await user.click(screen.getByText('Use Vite'));
     await user.click(screen.getByText('Use Vite'));
 
@@ -248,7 +262,14 @@ describe('AdrList', () => {
     );
 
     await user.click(screen.getByText('Use Vite'));
-    await user.selectOptions(screen.getByLabelText('Update status'), 'deprecated');
+    const changeStatusSelect = screen.getByLabelText('Change status');
+    const statusUpdateButton = screen.getByRole('button', { name: 'Create status update MR' });
+
+    expect(changeStatusSelect).toHaveValue('');
+    expect(statusUpdateButton).toBeDisabled();
+
+    await user.selectOptions(changeStatusSelect, 'deprecated');
+    expect(statusUpdateButton).toBeEnabled();
     await user.click(screen.getByRole('button', { name: 'Create status update MR' }));
 
     expect(await screen.findByText('Failed to create MR.')).toBeInTheDocument();

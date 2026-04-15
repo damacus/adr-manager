@@ -7,6 +7,7 @@ export function generateMadr(adr: Partial<Adr>): string {
   const context = adr.context || '';
   const decision = adr.decision || '';
   const consequences = adr.consequences || '';
+  const relatedAdrId = adr.relatedAdrId?.trim();
 
   return `---
 # These are optional elements. Feel free to remove any of them.
@@ -14,7 +15,7 @@ status: ${status}
 date: ${date}
 # deciders: 
 # consults: 
-# informs: 
+${relatedAdrId ? `informs: ${relatedAdrId}` : '# informs: '}
 ---
 # ${title}
 

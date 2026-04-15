@@ -41,7 +41,7 @@ export function AdrList({
   const [detailsCache, setDetailsCache] = useState<Record<string, Partial<Adr> & { rawContent?: string }>>({});
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStatus, setSelectedStatus] = useState<(typeof statusOrder)[number]>('all');
-  const [statusDrafts, setStatusDrafts] = useState<Record<string, Adr['status']>>({});
+  const [statusDrafts, setStatusDrafts] = useState<Record<string, Adr['status'] | ''>>({});
   const [statusUpdateLoadingId, setStatusUpdateLoadingId] = useState<string | null>(null);
   const [statusUpdateErrors, setStatusUpdateErrors] = useState<Record<string, string>>({});
   const [statusUpdateSuccessUrls, setStatusUpdateSuccessUrls] = useState<Record<string, string>>({});
@@ -83,7 +83,6 @@ export function AdrList({
       try {
         const data = await fetchAdrDetails(token, repoName, repoBranch, adrDir, id);
         setDetailsCache(prev => ({ ...prev, [id]: data }));
-        setStatusDrafts((prev) => ({ ...prev, [id]: data.status }));
       } catch (err) {
         console.error('Failed to fetch ADR details:', err);
       } finally {
@@ -92,13 +91,17 @@ export function AdrList({
     }
   };
 
-  const handleStatusDraftChange = (id: string, status: Adr['status']) => {
+  const handleStatusDraftChange = (id: string, status: Adr['status'] | '') => {
     setStatusDrafts((prev) => ({ ...prev, [id]: status }));
     setStatusUpdateErrors((prev) => ({ ...prev, [id]: '' }));
   };
 
   const handleStatusUpdate = async (adr: Adr & { rawContent?: string }) => {
-    const nextStatus = statusDrafts[adr.id] || adr.status;
+    const nextStatus = statusDrafts[adr.id];
+
+    if (!nextStatus || nextStatus === adr.status) {
+      return;
+    }
 
     setStatusUpdateLoadingId(adr.id);
     setStatusUpdateErrors((prev) => ({ ...prev, [adr.id]: '' }));
@@ -110,6 +113,7 @@ export function AdrList({
           ...prev,
           [adr.id]: { ...prev[adr.id], status: nextStatus },
         }));
+        setStatusDrafts((prev) => ({ ...prev, [adr.id]: '' }));
         setStatusUpdateSuccessUrls((prev) => ({
           ...prev,
           [adr.id]: 'https://example.com/demo-status-update',
@@ -141,6 +145,7 @@ export function AdrList({
       );
 
       setStatusUpdateSuccessUrls((prev) => ({ ...prev, [adr.id]: result.web_url }));
+      setStatusDrafts((prev) => ({ ...prev, [adr.id]: '' }));
     } catch (err: any) {
       setStatusUpdateErrors((prev) => ({
         ...prev,
@@ -216,10 +221,11 @@ export function AdrList({
           const StatusIcon = config.icon;
           const isExpanded = expandedId === adr.id;
           const isLoading = loadingId === adr.id;
-          const statusDraft = statusDrafts[adr.id] || adr.status;
+          const statusDraft = statusDrafts[adr.id] ?? '';
           const isUpdatingStatus = statusUpdateLoadingId === adr.id;
           const statusUpdateError = statusUpdateErrors[adr.id];
           const statusUpdateSuccessUrl = statusUpdateSuccessUrls[adr.id];
+          const hasPendingStatusChange = Boolean(statusDraft && statusDraft !== adr.status);
 
           return (
             <div
@@ -230,7 +236,6 @@ export function AdrList({
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-2">
-                    <span className="font-mono text-sm text-gray-400">{adr.id}</span>
                     <h3 className="text-lg font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
                       {adr.title}
                     </h3>
@@ -302,35 +307,33 @@ export function AdrList({
 
                           {statusEditingEnabled && (
                             <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
-                              <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-                                <div className="flex-1">
-                                  <label
-                                    htmlFor={`status-update-${adr.id}`}
-                                    className="block text-sm font-semibold text-gray-900 mb-2"
-                                  >
-                                    Update status
-                                  </label>
-                                  <select
-                                    id={`status-update-${adr.id}`}
-                                    value={statusDraft}
-                                    onChange={(event) => handleStatusDraftChange(adr.id, event.target.value as Adr['status'])}
-                                    disabled={isUpdatingStatus}
-                                    className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-50 disabled:cursor-not-allowed disabled:bg-gray-100"
-                                    onClick={(event) => event.stopPropagation()}
-                                  >
-                                    {statusOrder
-                                      .filter((status) => status !== 'all')
-                                      .map((status) => (
-                                        <option key={status} value={status}>
-                                          {status.charAt(0).toUpperCase() + status.slice(1)}
-                                        </option>
-                                      ))}
-                                  </select>
-                                  <p className="mt-2 text-xs text-gray-500">
-                                    {statusEditingPreviewOnly
-                                      ? 'Preview mode: this simulates a status update locally without creating a merge request.'
-                                      : 'This creates a merge request that updates only the ADR status field.'}
-                                  </p>
+                              <label
+                                htmlFor={`status-update-${adr.id}`}
+                                className="block text-sm font-semibold text-gray-900 mb-2"
+                              >
+                                Change status
+                              </label>
+                              <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                                <div className="min-w-0 flex-1">
+                                  <div className="md:w-fit">
+                                    <select
+                                      id={`status-update-${adr.id}`}
+                                      value={statusDraft}
+                                      onChange={(event) => handleStatusDraftChange(adr.id, event.target.value as Adr['status'] | '')}
+                                      disabled={isUpdatingStatus}
+                                      className="w-full min-w-0 rounded-lg border border-gray-300 bg-white px-3 py-2 pr-10 text-sm text-gray-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-50 disabled:cursor-not-allowed disabled:bg-gray-100 md:w-auto md:min-w-[15rem]"
+                                      onClick={(event) => event.stopPropagation()}
+                                    >
+                                      <option value="">Select new status</option>
+                                      {statusOrder
+                                        .filter((status) => status !== 'all')
+                                        .map((status) => (
+                                          <option key={status} value={status}>
+                                            {status.charAt(0).toUpperCase() + status.slice(1)}
+                                          </option>
+                                        ))}
+                                    </select>
+                                  </div>
                                 </div>
                                 <button
                                   type="button"
@@ -338,8 +341,8 @@ export function AdrList({
                                     event.stopPropagation();
                                     void handleStatusUpdate(adr);
                                   }}
-                                  disabled={isUpdatingStatus || statusDraft === adr.status}
-                                  className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
+                                  disabled={isUpdatingStatus || !hasPendingStatusChange}
+                                  className="self-start rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
                                 >
                                   {isUpdatingStatus
                                     ? 'Creating MR...'
@@ -348,6 +351,12 @@ export function AdrList({
                                       : 'Create status update MR'}
                                 </button>
                               </div>
+                              <p className="mt-2 text-xs text-gray-500">
+                                Current status: <span className="font-medium capitalize text-gray-700">{adr.status}</span>.{' '}
+                                {statusEditingPreviewOnly
+                                  ? 'Preview mode: this simulates a status update locally without creating a merge request.'
+                                  : 'This creates a merge request that updates only the ADR status field.'}
+                              </p>
 
                               {statusUpdateError && (
                                 <p className="mt-3 text-sm text-red-600">{statusUpdateError}</p>

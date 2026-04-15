@@ -245,6 +245,7 @@ function App() {
             repoName={repoName}
             repoBranch={repoBranch}
             adrDir={adrDir}
+            existingAdrs={adrs}
           />
         ) : loading ? (
           <div className="flex justify-center py-12">

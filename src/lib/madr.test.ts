@@ -19,12 +19,14 @@ describe('generateMadr', () => {
     const markdown = generateMadr({
       title: 'Use Vite',
       status: 'accepted',
+      relatedAdrId: 'adr-001',
       context: 'The current tooling is slow.',
       decision: 'Adopt Vite for local development.',
       consequences: 'Startup time drops significantly.',
     });
 
     expect(markdown).toContain('status: accepted');
+    expect(markdown).toContain('informs: adr-001');
     expect(markdown).toContain('# Use Vite');
     expect(markdown).toContain('The current tooling is slow.');
     expect(markdown).toContain('Chosen option: "Adopt Vite for local development."');
