@@ -36,17 +36,17 @@
       "matchManagers": [
         "npm"
       ],
-      "excludePackageNames": [
-        "vite",
-        "@vitejs/plugin-react",
-        "vitest",
-        "jsdom",
-        "typescript",
-        "@types/node"
-      ],
       "automerge": true,
       "platformAutomerge": true,
-      "automergeType": "pr"
+      "automergeType": "pr",
+      "matchPackageNames": [
+        "!vite",
+        "!@vitejs/plugin-react",
+        "!vitest",
+        "!jsdom",
+        "!typescript",
+        "!@types/node"
+      ]
     }
   ]
 }
