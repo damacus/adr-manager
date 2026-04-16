@@ -46,6 +46,22 @@ export function AdrList({
   const [statusUpdateErrors, setStatusUpdateErrors] = useState<Record<string, string>>({});
   const [statusUpdateSuccessUrls, setStatusUpdateSuccessUrls] = useState<Record<string, string>>({});
 
+  const filterSummary = useMemo(() => {
+    const parts: string[] = [];
+
+    if (selectedStatus !== 'all') {
+      parts.push(`${selectedStatus} ADRs`);
+    } else {
+      parts.push('all ADRs');
+    }
+
+    if (searchQuery.trim()) {
+      parts.push(`matching "${searchQuery.trim()}"`);
+    }
+
+    return `Showing ${parts.join(' ')}`;
+  }, [searchQuery, selectedStatus]);
+
   const filteredAdrs = useMemo(() => {
     const normalizedQuery = searchQuery.trim().toLowerCase();
 
@@ -72,17 +88,18 @@ export function AdrList({
 
   const handleExpand = async (id: string) => {
     if (expandedId === id) {
+      setStatusUpdateSuccessUrls((prev) => ({ ...prev, [id]: '' }));
       setExpandedId(null);
       return;
     }
-    
+
     setExpandedId(id);
-    
+
     if (!detailsCache[id]) {
       setLoadingId(id);
       try {
         const data = await fetchAdrDetails(token, repoName, repoBranch, adrDir, id);
-        setDetailsCache(prev => ({ ...prev, [id]: data }));
+        setDetailsCache((prev) => ({ ...prev, [id]: data }));
       } catch (err) {
         console.error('Failed to fetch ADR details:', err);
       } finally {
@@ -94,6 +111,7 @@ export function AdrList({
   const handleStatusDraftChange = (id: string, status: Adr['status'] | '') => {
     setStatusDrafts((prev) => ({ ...prev, [id]: status }));
     setStatusUpdateErrors((prev) => ({ ...prev, [id]: '' }));
+    setStatusUpdateSuccessUrls((prev) => ({ ...prev, [id]: '' }));
   };
 
   const handleStatusUpdate = async (adr: Adr & { rawContent?: string }) => {
@@ -189,6 +207,8 @@ export function AdrList({
           </p>
         </div>
 
+        <p className="text-sm text-gray-500">{filterSummary}</p>
+
         <div className="flex flex-wrap gap-2">
           {statusOrder.map((status) => {
             const isActive = selectedStatus === status;
@@ -216,7 +236,8 @@ export function AdrList({
         {filteredAdrs.map((baseAdr) => {
           const adrDetails = detailsCache[baseAdr.id] || {};
           const adr = { ...baseAdr, ...adrDetails };
-          
+          const relatedAdr = adr.relatedAdrId ? adrs.find((candidate) => candidate.id === adr.relatedAdrId) : undefined;
+
           const config = statusConfig[adr.status] || statusConfig.unknown;
           const StatusIcon = config.icon;
           const isExpanded = expandedId === adr.id;
@@ -226,6 +247,7 @@ export function AdrList({
           const statusUpdateError = statusUpdateErrors[adr.id];
           const statusUpdateSuccessUrl = statusUpdateSuccessUrls[adr.id];
           const hasPendingStatusChange = Boolean(statusDraft && statusDraft !== adr.status);
+          const showActions = statusEditingEnabled || Boolean(adr.url);
 
           return (
             <div
@@ -235,7 +257,7 @@ export function AdrList({
             >
               <div className="flex items-start justify-between">
                 <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-2">
+                  <div className="flex flex-wrap items-center gap-2 mb-2">
                     <h3 className="text-lg font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
                       {adr.title}
                     </h3>
@@ -246,12 +268,14 @@ export function AdrList({
                       <span className="capitalize">{adr.status}</span>
                     </span>
                   </div>
-                  
+
                   {!isExpanded && adr.context && (
                     <p className="text-gray-600 text-sm line-clamp-2 mb-3">{adr.context}</p>
                   )}
-                  
-                  <div className="flex items-center gap-4 text-xs text-gray-500 mt-2">
+
+                  <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500 mt-2">
+                    <span className="font-mono text-[11px] text-gray-400">{adr.id}</span>
+                    <span>&bull;</span>
                     <span className="flex items-center gap-1">
                       <div className="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 font-medium">
                         {adr.author.charAt(0)}
@@ -286,122 +310,160 @@ export function AdrList({
                         </div>
                       ) : (
                         <>
-                          {adr.context && (
-                            <div>
-                              <h4 className="text-sm font-semibold text-gray-900 mb-2">Context</h4>
-                              <p className="text-sm text-gray-700 whitespace-pre-wrap">{adr.context}</p>
-                            </div>
-                          )}
-                          {adr.decision && (
-                            <div>
-                              <h4 className="text-sm font-semibold text-gray-900 mb-2">Decision</h4>
-                              <p className="text-sm text-gray-700 whitespace-pre-wrap">{adr.decision}</p>
-                            </div>
-                          )}
-                          {adr.consequences && (
-                            <div>
-                              <h4 className="text-sm font-semibold text-gray-900 mb-2">Consequences</h4>
-                              <p className="text-sm text-gray-700 whitespace-pre-wrap">{adr.consequences}</p>
-                            </div>
-                          )}
+                          <div className="space-y-6">
+                            {adr.context && (
+                              <div>
+                                <h4 className="text-sm font-semibold text-gray-900 mb-2">Context</h4>
+                                <p className="text-sm text-gray-700 whitespace-pre-wrap">{adr.context}</p>
+                              </div>
+                            )}
+                            {adr.decision && (
+                              <div>
+                                <h4 className="text-sm font-semibold text-gray-900 mb-2">Decision</h4>
+                                <p className="text-sm text-gray-700 whitespace-pre-wrap">{adr.decision}</p>
+                              </div>
+                            )}
+                            {adr.consequences && (
+                              <div>
+                                <h4 className="text-sm font-semibold text-gray-900 mb-2">Consequences</h4>
+                                <p className="text-sm text-gray-700 whitespace-pre-wrap">{adr.consequences}</p>
+                              </div>
+                            )}
+                            {adr.relatedAdrId && (
+                              <div>
+                                <h4 className="text-sm font-semibold text-gray-900 mb-2">Related ADR</h4>
+                                {relatedAdr ? (
+                                  <button
+                                    type="button"
+                                    aria-label={`${relatedAdr.title} ${relatedAdr.id}`}
+                                    onClick={(event) => {
+                                      event.stopPropagation();
+                                      void handleExpand(relatedAdr.id);
+                                    }}
+                                    className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-left text-sm text-gray-700 transition-colors hover:border-blue-300 hover:text-blue-700"
+                                  >
+                                    <span className="font-medium text-gray-900">{relatedAdr.title}</span>
+                                    <span className="font-mono text-xs text-gray-500">{relatedAdr.id}</span>
+                                  </button>
+                                ) : (
+                                  <p className="inline-flex items-center rounded-lg border border-gray-200 bg-white px-3 py-2 font-mono text-sm text-gray-700">
+                                    {adr.relatedAdrId}
+                                  </p>
+                                )}
+                              </div>
+                            )}
 
-                          {statusEditingEnabled && (
-                            <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
-                              <label
-                                htmlFor={`status-update-${adr.id}`}
-                                className="block text-sm font-semibold text-gray-900 mb-2"
-                              >
-                                Change status
-                              </label>
-                              <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                                <div className="min-w-0 flex-1">
-                                  <div className="md:w-fit">
-                                    <select
-                                      id={`status-update-${adr.id}`}
-                                      value={statusDraft}
-                                      onChange={(event) => handleStatusDraftChange(adr.id, event.target.value as Adr['status'] | '')}
-                                      disabled={isUpdatingStatus}
-                                      className="w-full min-w-0 rounded-lg border border-gray-300 bg-white px-3 py-2 pr-10 text-sm text-gray-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-50 disabled:cursor-not-allowed disabled:bg-gray-100 md:w-auto md:min-w-[15rem]"
-                                      onClick={(event) => event.stopPropagation()}
+                            {!adr.context && !adr.decision && !adr.consequences && (
+                              <div className="text-sm text-gray-500 italic bg-gray-50 p-4 rounded-lg border border-gray-100">
+                                This ADR could not be fully parsed into sections. Open the source file to inspect the original markdown and revision history.
+                              </div>
+                            )}
+                          </div>
+
+                          {showActions && (
+                            <div className="border-t border-gray-100 pt-6 space-y-4">
+                              <h4 className="text-sm font-semibold uppercase tracking-wide text-gray-500">Actions</h4>
+
+                              {statusEditingEnabled && (
+                                <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
+                                  <label
+                                    htmlFor={`status-update-${adr.id}`}
+                                    className="block text-sm font-semibold text-gray-900 mb-2"
+                                  >
+                                    Change status
+                                  </label>
+                                  <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                                    <div className="min-w-0 flex-1">
+                                      <div className="md:w-fit">
+                                        <select
+                                          id={`status-update-${adr.id}`}
+                                          value={statusDraft}
+                                          onChange={(event) => handleStatusDraftChange(adr.id, event.target.value as Adr['status'] | '')}
+                                          disabled={isUpdatingStatus}
+                                          className="w-full min-w-0 rounded-lg border border-gray-300 bg-white px-3 py-2 pr-10 text-sm text-gray-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-50 disabled:cursor-not-allowed disabled:bg-gray-100 md:w-auto md:min-w-[15rem]"
+                                          onClick={(event) => event.stopPropagation()}
+                                        >
+                                          <option value="">Select new status</option>
+                                          {statusOrder
+                                            .filter((status) => status !== 'all')
+                                            .map((status) => (
+                                              <option key={status} value={status}>
+                                                {status.charAt(0).toUpperCase() + status.slice(1)}
+                                              </option>
+                                            ))}
+                                        </select>
+                                      </div>
+                                    </div>
+                                    <button
+                                      type="button"
+                                      onClick={(event) => {
+                                        event.stopPropagation();
+                                        void handleStatusUpdate(adr);
+                                      }}
+                                      disabled={isUpdatingStatus || !hasPendingStatusChange}
+                                      className="self-start rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
                                     >
-                                      <option value="">Select new status</option>
-                                      {statusOrder
-                                        .filter((status) => status !== 'all')
-                                        .map((status) => (
-                                          <option key={status} value={status}>
-                                            {status.charAt(0).toUpperCase() + status.slice(1)}
-                                          </option>
-                                        ))}
-                                    </select>
+                                      {isUpdatingStatus
+                                        ? 'Creating MR...'
+                                        : statusEditingPreviewOnly
+                                          ? 'Preview status change'
+                                          : 'Create status update MR'}
+                                    </button>
+                                  </div>
+                                  <p className="mt-2 text-xs text-gray-500">
+                                    Current status: <span className="font-medium capitalize text-gray-700">{adr.status}</span>.{' '}
+                                    {statusEditingPreviewOnly
+                                      ? 'Preview mode: this simulates a status update locally without creating a merge request.'
+                                      : 'This creates a merge request that updates only the ADR status field.'}
+                                  </p>
+
+                                  {statusUpdateError && (
+                                    <p className="mt-3 text-sm text-red-600">{statusUpdateError}</p>
+                                  )}
+
+                                  {statusUpdateSuccessUrl && (
+                                    statusEditingPreviewOnly ? (
+                                      <p className="mt-3 text-sm text-green-700">
+                                        Preview updated. The status badge now reflects your selected value.
+                                      </p>
+                                    ) : (
+                                      <a
+                                        href={statusUpdateSuccessUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-blue-600 hover:text-blue-700"
+                                        onClick={(event) => event.stopPropagation()}
+                                      >
+                                        <ExternalLink className="w-4 h-4" />
+                                        View created merge request
+                                      </a>
+                                    )
+                                  )}
+                                </div>
+                              )}
+
+                              {adr.url && (
+                                <div className="rounded-xl border border-gray-200 bg-white p-4">
+                                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                    <div>
+                                      <h5 className="text-sm font-semibold text-gray-900">Source file</h5>
+                                      <p className="mt-1 text-sm text-gray-500">
+                                        Open the ADR markdown in your Git provider for raw source and history.
+                                      </p>
+                                    </div>
+                                    <a
+                                      href={adr.url}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="inline-flex items-center gap-1.5 text-sm font-medium text-blue-600 hover:text-blue-700 bg-blue-50 px-3 py-1.5 rounded-lg transition-colors"
+                                      onClick={(e) => e.stopPropagation()}
+                                    >
+                                      <ExternalLink className="w-4 h-4" />
+                                      View on Git Provider
+                                    </a>
                                   </div>
                                 </div>
-                                <button
-                                  type="button"
-                                  onClick={(event) => {
-                                    event.stopPropagation();
-                                    void handleStatusUpdate(adr);
-                                  }}
-                                  disabled={isUpdatingStatus || !hasPendingStatusChange}
-                                  className="self-start rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
-                                >
-                                  {isUpdatingStatus
-                                    ? 'Creating MR...'
-                                    : statusEditingPreviewOnly
-                                      ? 'Preview status change'
-                                      : 'Create status update MR'}
-                                </button>
-                              </div>
-                              <p className="mt-2 text-xs text-gray-500">
-                                Current status: <span className="font-medium capitalize text-gray-700">{adr.status}</span>.{' '}
-                                {statusEditingPreviewOnly
-                                  ? 'Preview mode: this simulates a status update locally without creating a merge request.'
-                                  : 'This creates a merge request that updates only the ADR status field.'}
-                              </p>
-
-                              {statusUpdateError && (
-                                <p className="mt-3 text-sm text-red-600">{statusUpdateError}</p>
                               )}
-
-                              {statusUpdateSuccessUrl && (
-                                statusEditingPreviewOnly ? (
-                                  <p className="mt-3 text-sm text-green-700">
-                                    Preview updated. The status badge now reflects your selected value.
-                                  </p>
-                                ) : (
-                                  <a
-                                    href={statusUpdateSuccessUrl}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-blue-600 hover:text-blue-700"
-                                    onClick={(event) => event.stopPropagation()}
-                                  >
-                                    <ExternalLink className="w-4 h-4" />
-                                    View created merge request
-                                  </a>
-                                )
-                              )}
-                            </div>
-                          )}
-                          
-                          {(!adr.context && !adr.decision && !adr.consequences) && (
-                            <div className="text-sm text-gray-500 italic bg-gray-50 p-4 rounded-lg border border-gray-100">
-                              Detailed content parsing is not yet implemented for this repository. 
-                              Please view the file directly on your Git provider.
-                            </div>
-                          )}
-
-                          {adr.url && (
-                            <div className="pt-2">
-                              <a
-                                href={adr.url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center gap-1.5 text-sm font-medium text-blue-600 hover:text-blue-700 bg-blue-50 px-3 py-1.5 rounded-lg transition-colors"
-                                onClick={(e) => e.stopPropagation()}
-                              >
-                                <ExternalLink className="w-4 h-4" />
-                                View on Git Provider
-                              </a>
                             </div>
                           )}
                         </>

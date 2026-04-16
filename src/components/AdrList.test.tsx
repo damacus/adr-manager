@@ -241,6 +241,57 @@ describe('AdrList', () => {
     expect(fetchAdrDetails).toHaveBeenCalledTimes(1);
   });
 
+  it('shows a related ADR link in the expanded detail view when present', async () => {
+    const user = userEvent.setup();
+
+    fetchAdrDetails.mockResolvedValue({
+      ...adrs[0],
+      relatedAdrId: '002-use-forks',
+      rawContent: `---\nstatus: accepted\ndate: 2026-04-01\ninforms: 002-use-forks\n---\n# Use Vite\n`,
+    });
+
+    render(
+      <AdrList
+        adrs={adrs}
+        onCreateNew={vi.fn()}
+        token="token"
+        repoName="group/project"
+        repoBranch="main"
+        adrDir="docs/adr"
+      />
+    );
+
+    await user.click(screen.getByText('Use Vite'));
+
+    expect(await screen.findByRole('heading', { name: 'Related ADR', level: 4 })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /use forks for contributions 002-use-forks/i })).toBeInTheDocument();
+  });
+
+  it('hides the related ADR section when no relationship exists', async () => {
+    const user = userEvent.setup();
+
+    fetchAdrDetails.mockResolvedValue({
+      ...adrs[0],
+      relatedAdrId: undefined,
+      rawContent: `---\nstatus: accepted\ndate: 2026-04-01\n---\n# Use Vite\n`,
+    });
+
+    render(
+      <AdrList
+        adrs={adrs}
+        onCreateNew={vi.fn()}
+        token="token"
+        repoName="group/project"
+        repoBranch="main"
+        adrDir="docs/adr"
+      />
+    );
+
+    await user.click(screen.getByText('Use Vite'));
+
+    expect(screen.queryByText('Related ADR')).not.toBeInTheDocument();
+  });
+
   it('shows an inline error when status update MR creation fails', async () => {
     const user = userEvent.setup();
 
