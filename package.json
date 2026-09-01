@@ -30,7 +30,7 @@
     "@types/react-dom": "19.2.5",
     "autoprefixer": "^10.5.0",
     "jsdom": "30.0.1",
-    "knip": "6.33.0",
+    "knip": "6.34.0",
     "tailwindcss": "^4.2.2",
     "tsx": "^4.21.0",
     "typescript": "~7.0.0",
