@@ -1,5 +1,5 @@
 ---
-image: node:24
+image: node:26
 
 variables:
   PNPM_VERSION: 10.10.0
